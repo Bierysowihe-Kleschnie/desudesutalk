@@ -1,29 +1,28 @@
 // ==UserScript==
-// @name         DesuDesuTalk
+// @name         DesuDesuTalk Dev
 // @namespace    udp://desushelter/*
-// @version      0.3.34
+// @version      0.4.0-alpha
 // @description  Write something useful!
-// @include      http://dobrochan.com/*/*
-// @include      http://dobrochan.ru/*/*
-// @include      http://dobrochan.org/*/*
-// @include      http://inach.org/*/*
-// @include      https://8chan.co/*/*
-// @include      https://lainchan.org/*/*
-// @include      http://iichan.hk/*/*
-// @include      http://2-ch.su/*/*
-// @include      http://syn-ch.com/*/*
-// @include      http://syn-ch.org/*/*
-// @include      http://syn-ch.ru/*/*
-// @include      http://krautchan.net/*/*
-// @include      https://boards.4chan.org/*/*
-// @include      http://boards.4chan.org/*/*
-// @include      https://2ch.hk/*/*
-// @include      https://2ch.re/*/*
-// @include      https://2ch.tf/*/*
-// @include      https://2ch.wf/*/*
-// @include      https://2ch.yt/*/*
-// @include      https://2-ch.so/*/*
-// @exclude      *#dev
+// @include      http://dobrochan.com/*/*#dev
+// @include      http://dobrochan.ru/*/*#dev
+// @include      http://dobrochan.org/*/*#dev
+// @include      http://inach.org/*/*#dev
+// @include      https://8chan.co/*/*#dev
+// @include      https://lainchan.org/*/*#dev
+// @include      http://iichan.hk/*/*#dev
+// @include      http://2-ch.su/*/*#dev
+// @include      http://syn-ch.com/*/*#dev
+// @include      http://syn-ch.org/*/*#dev
+// @include      http://syn-ch.ru/*/*#dev
+// @include      http://krautchan.net/*/*#dev
+// @include      https://boards.4chan.org/*/*#dev
+// @include      http://boards.4chan.org/*/*#dev
+// @include      https://2ch.hk/*/*#dev
+// @include      https://2ch.re/*/*#dev
+// @include      https://2ch.tf/*/*#dev
+// @include      https://2ch.wf/*/*#dev
+// @include      https://2ch.yt/*/*#dev
+// @include      https://2-ch.so/*/*#dev
 // @copyright    2014+, Boku 
 // @icon         https://github.com/desudesutalk/desudesutalk/raw/master/icon.jpg
 // @updateURL    https://github.com/desudesutalk/desudesutalk/raw/master/ddt.meta.js

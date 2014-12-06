@@ -1,8 +1,12 @@
+var namespace = "dev_0_4_0_alpha_";
+
 var scriptStore = window.opera && window.opera.scriptStorage || localStorage,
     isGM = typeof GM_setValue === 'function';
 
 var ssGet = function(name, inLocal)    {
 	"use strict";
+
+	name = namespace + name;
 
 	if(!inLocal) inLocal = false;
 
@@ -17,6 +21,8 @@ var ssGet = function(name, inLocal)    {
 
 var ssSet = function(name, val, inLocal)    {
 	"use strict";
+
+	name = namespace + name;
 
 	if(!inLocal) inLocal = false;
 
