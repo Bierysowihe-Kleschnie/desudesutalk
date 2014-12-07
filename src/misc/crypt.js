@@ -107,8 +107,11 @@ var decodeMessage = function(data){
     if(data[0] != CODEC_VERSION) return false;
     var msgType = data[261],
         keyNum = data[314] + data[315] * 256,
-        dataLength = data[1] + data[2] * 256 + data[3] * 65536 + data[4] * 16777216,
-        compressedAt = data[262] + data[263] * 256 + data[264] * 65536 + data[265] * 16777216,
+        dataLength = data[1] + data[2] * 256 + data[3] * 65536 + data[4] * 16777216;
+
+    data = data.subarray(0, dataLength);
+
+    var compressedAt = data[262] + data[263] * 256 + data[264] * 65536 + data[265] * 16777216,
         cryptedPart = data.subarray(316 + 148 * keyNum),
         signedPart = data.subarray(261), keys = {}, i, j, message;
 

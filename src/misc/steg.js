@@ -20,9 +20,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-var steg_iv = [];
-
-var jsf5steg = (function(){
+var steg = (function(){
 	"use strict";
 
 	function buildHuffmanTable(codeLengths, values) {
@@ -175,63 +173,62 @@ var jsf5steg = (function(){
 
     	var successiveACState = 0, successiveACNextValue;
     
-        function decodeACSuccessive(component, zz, pos) {
-            var k = spectralStart, e = spectralEnd, r = 0;
-            while (k <= e) {
-                //var z = dctZigZag[k];
-                switch (successiveACState) {
-                    case 0: // initial state
-                        var rs = decodeHuffman(component.huffmanTableAC);
-                        var s = rs & 15; 
-                        r = rs >> 4;
-                        if (s === 0) {
-                            if (r < 15) {
-                                eobrun = receive(r) + (1 << r);
-                                successiveACState = 4;
-                            } else {
-                                r = 16;
-                                successiveACState = 1;
-                            }
-                        } else {
-                            if (s !== 1) throw "invalid ACn encoding";
-                            successiveACNextValue = receive(s);
+    	function decodeACSuccessive(component, zz, pos) {
+      		var k = spectralStart, e = spectralEnd, r = 0;
+      		while (k <= e) {
+        		//var z = dctZigZag[k];
+        		switch (successiveACState) {
+        			case 0: // initial state
+          				var rs = decodeHuffman(component.huffmanTableAC);
+          				var s = rs & 15, r = rs >> 4;
+          				if (s === 0) {
+            				if (r < 15) {
+              					eobrun = receive(r) + (1 << r);
+              					successiveACState = 4;
+            				} else {
+              					r = 16;
+              					successiveACState = 1;
+            				}
+          				} else {
+            				if (s !== 1) throw "invalid ACn encoding";
+            				successiveACNextValue = receive(s);
                             if(!successiveACNextValue)
                                 successiveACNextValue = -1;                            
-                            successiveACState = r ? 2 : 3;
-                        }
-                        continue;
-                    case 1: // skipping r zero items
-                    case 2:
-                        if (zz[pos + k])
-                            zz[pos + k] += (readBit() << successive) * (zz[pos + k] >= 0 ? 1 : -1);
-                        else {
-                            r--;
-                            if (r === 0)
-                                successiveACState = successiveACState == 2 ? 3 : 0;
-                        }
-                        break;
-                    case 3: // set value for a zero item
-                        if (zz[pos + k])
-                            zz[pos + k] += (readBit() << successive) * (zz[pos + k] >= 0 ? 1 : -1);
-                        else {
-                            zz[pos + k] = successiveACNextValue << successive;
-                            successiveACState = 0;
-                        }
-                        break;
-                    case 4: // eob
-                        if (zz[pos + k])
-                            zz[pos + k] += (readBit() << successive) * (zz[pos + k] >= 0 ? 1 : -1);
-                        break;
-                }
-                k++;
-            }
+            				successiveACState = r ? 2 : 3;
+          				}
+          				continue;
+        			case 1: // skipping r zero items
+        			case 2:
+          				if (zz[pos + k])
+            				zz[pos + k] += (readBit() << successive) * (zz[pos + k] >= 0 ? 1 : -1);
+          				else {
+            				r--;
+            				if (r === 0)
+              					successiveACState = successiveACState == 2 ? 3 : 0;
+          				}
+          				break;
+        			case 3: // set value for a zero item
+          				if (zz[pos + k])
+            				zz[pos + k] += (readBit() << successive) * (zz[pos + k] >= 0 ? 1 : -1);
+          				else {
+            				zz[pos + k] = successiveACNextValue << successive;
+            				successiveACState = 0;
+          				}
+          				break;
+        			case 4: // eob
+          				if (zz[pos + k])
+            				zz[pos + k] += (readBit() << successive) * (zz[pos + k] >= 0 ? 1 : -1);
+          				break;
+        		}
+        		k++;
+      		}
 
-            if (successiveACState === 4) {
-                eobrun--;
-                if (eobrun === 0)
-                    successiveACState = 0;
-            }
-        }
+      		if (successiveACState === 4) {
+        		eobrun--;
+        		if (eobrun === 0)
+          			successiveACState = 0;
+      		}
+    	}
 
     	function decodeMcu(component, decode, mcu, row, col) {
       		var mcuRow = (mcu / mcusPerLine) | 0;
@@ -340,7 +337,9 @@ var jsf5steg = (function(){
                 var blocksPerColumn = Math.ceil(Math.ceil(frame.scanLines  / 8) * component.v / frame.maxV);
                 var blocksPerLineForMcu = mcusPerLine * component.h;
                 var blocksPerColumnForMcu = mcusPerColumn * component.v;
-                var blocksBufferSize = 64 * blocksPerColumnForMcu * (blocksPerLineForMcu + 1);
+
+                var blocksBufferSize = 64 * blocksPerColumnForMcu
+                                          * (blocksPerLineForMcu + 1);
                 component.blocks = new Int16Array(blocksBufferSize);
                 component.blocksPerLine = blocksPerLine;
                 component.blocksPerColumn = blocksPerColumn;
@@ -416,7 +415,7 @@ var jsf5steg = (function(){
                         if (maxH < h) maxH = h;
                         if (maxV < v) maxV = v;
 	            		var qId = data[offset + 2];
-	            		l = frame.components.push({
+	            		var l = frame.components.push({
 		            		componentId: componentId,
 	            			h: h,
 	            			v: v,
@@ -580,7 +579,7 @@ var jsf5steg = (function(){
 	function computeHuffmanTbl(nrcodes, std_table){
 		var codevalue = 0;
 		var pos_in_table = 0;
-		var HT = [];
+		var HT = new Array();
 		for (var k = 1; k <= 16; k++) {
 			for (var j = 1; j <= nrcodes[k]; j++) {
 				HT[std_table[pos_in_table]] = [];
@@ -680,8 +679,8 @@ var jsf5steg = (function(){
 			writeWord(self.quantizationTables[i].length + 2); // length
 			for (var j = 0; j < self.quantizationTables[i].length; j++) {
 				writeByte(self.quantizationTables[i][j]);
-			}
-		}
+			};
+		};
 	}
 
 	function writeSOF0(self){
@@ -697,7 +696,7 @@ var jsf5steg = (function(){
 			writeByte(c.componentId);
 			writeByte(c.h << 4 | c.v);
 			writeByte(c.quantizationTable);
-		}
+		};
 	}
 
 	function writeDHT(self){
@@ -750,12 +749,12 @@ var jsf5steg = (function(){
 		for (var i = 0; i < self.frames[0].components.length; i++) {
 			var c = self.frames[0].components[i];
 			writeByte(c.componentId);
-			if(i === 0){
+			if(i == 0){
                 writeByte(0);
             }else{
                 writeByte(0x11);
             }
-		}
+		};
 
 		writeByte(0); // Ss
 		writeByte(0x3f); // Se
@@ -776,7 +775,7 @@ var jsf5steg = (function(){
 		}
 		var Diff = DU[0] - DC; DC = DU[0];
 		//Encode DC
-		if (Diff===0) {
+		if (Diff==0) {
 			writeBits(HTDC[0]); // Diff might be 0
 		} else {
 			pos = 32767+Diff;
@@ -785,9 +784,9 @@ var jsf5steg = (function(){
 		}
 		//Encode ACs
 		var end0pos = 63; // was const... which is crazy
-		for (; (end0pos>0)&&(DU[end0pos]===0); end0pos--) {}
+		for (; (end0pos>0)&&(DU[end0pos]==0); end0pos--) {};
 		//end0pos = first element in reverse order !=0
-		if ( end0pos === 0) {
+		if ( end0pos == 0) {
 			writeBits(EOB);
 			return DC;
 		}
@@ -795,7 +794,7 @@ var jsf5steg = (function(){
 		var lng;
 		while ( i <= end0pos ) {
 			var startpos = i;
-			for (; (DU[i]===0) && (i<=end0pos); ++i) {}
+			for (; (DU[i]==0) && (i<=end0pos); ++i) {}
 			var nrzeroes = i-startpos;
 			if ( nrzeroes >= I16 ) {
 				lng = nrzeroes>>4;
@@ -820,7 +819,7 @@ var jsf5steg = (function(){
 		initCategoryNumber();
 		
 		// Initialize bit writer
-		byteout = [];
+		byteout = new Array();
 		bytenew=0;
 		bytepos=7;
 
@@ -845,13 +844,13 @@ var jsf5steg = (function(){
 		var r, g, b;
 		var start,p, col,row,pos;
 
-		var DCdiff = new Array(this.frames[0].components.length);
+		var DCdiff = Array(this.frames[0].components.length);
 		for (var i = 0; i < this.frames[0].components.length; i++) {
 			DCdiff[i] = 0;
 		}
 
 		for (var mcu = 0; mcu < this.frames[0].mcusPerLine * this.frames[0].mcusPerColumn; mcu++){
-			for (i = 0; i < this.frames[0].components.length; i++) {
+			for (var i = 0; i < this.frames[0].components.length; i++) {
 				var c = this.frames[0].components[i];
 				for (var v = 0; v < c.v; v++) {
 					for (var h = 0; h < c.h; h++) {
@@ -859,18 +858,18 @@ var jsf5steg = (function(){
 						var mcuCol = mcu % this.frames[0].mcusPerLine;
 						var blockRow = mcuRow * c.v + v;
 						var blockCol = mcuCol * c.h + h;
-						if(i===0){
+						if(i==0){
 							DCdiff[i] = processDU(c.blocks, (blockRow * this.frames[0].mcusPerLine * c.h + blockCol) * 64, DCdiff[i], YDC_HT, YAC_HT);
 						}else{
 							DCdiff[i] = processDU(c.blocks, (blockRow * this.frames[0].mcusPerLine * c.h + blockCol) * 64, DCdiff[i], UVDC_HT, UVAC_HT);
 						}
-					}
-				}
-			}
-		}
+					};
+				};
+			};
+		};
 
 		// Do the bit alignment of the EOI marker
-		if ( bytepos >= 0 && bytepos !=7) {
+		if ( bytepos >= 0 && bytepos != 7) {
 			var fillbits = [];
 			fillbits[1] = bytepos+1;
 			fillbits[0] = (1<<(bytepos+1))-1;
@@ -879,381 +878,260 @@ var jsf5steg = (function(){
 
 		writeWord(0xFFD9); //EOI
 		
-		return byteout;
+		return byteout	
 	};
 
-    var Permutaion = function(prng, size){
-        var i;
-        this.prng = prng;
-        this.ids = new Array(size);
+    // Stego code
 
-        for (i = 0; i < size; i++) this.ids[i] = i;
+    constructor.prototype.stegEmbed = function (data, IV, k) {
+        var dataLength = data.length;
+        var blocks = this.frames[0].components[0].blocks;
+        var blocksLength = blocks.length;
 
-        var max_random = this.ids.length;
-        for (i = 0; i < this.ids.length; i++) {
-            var random_index = this.get_next(max_random);
-            max_random--;
-            var tmp = this.ids[random_index];
-            this.ids[random_index] = this.ids[max_random];
-            this.ids[max_random] = tmp;
-        }
-    };
+        if (k === undefined) {
+            var ones = 0, zeros = 0;
 
-    Permutaion.prototype.get_next = function(max){
-        var ret_val = this.prng.next() | this.prng.next() << 8 | 
-                this.prng.next() << 16 | this.prng.next() << 24;
-        ret_val %= max;
-        if(ret_val < 0) ret_val += max;
-        return ret_val;
-    };
-
-    Permutaion.prototype.get_shuffled = function(i){
-        return this.ids[i];
-    };
-
-    constructor.prototype.f5embed = function(embedAB, iv){
-        var data = new Uint8Array(embedAB);
-        var coeff = this.frames[0].components[0].blocks;
-        var coeff_count = coeff.length;
-        console.log('got ' + coeff_count + ' DCT AC/DC coefficients');
-
-        var _changed = 0, _embedded = 0, _examined = 0, _expected = 0, _one = 0, _large = 0, _thrown = 0, _zero = 0, shuffled_index = 0,
-            changed, usable, i, n, k, ii;
-        
-        for (i = 0; i < coeff.length; i++) {
-            if(i % 64 === 0) continue;
-
-            if(coeff[i] == 1 || coeff[i] == -1){
-                _one++;
-            }
-
-            if(coeff[i] === 0){
-                _zero++;
-            }
-        }
-
-        _large = coeff_count - _zero - _one - coeff_count / 64;
-        _expected = Math.floor(_large + (0.49 * _one));
-
-        console.log('one=' + _one);
-        console.log('large=' + _large);
-
-        console.log('expected capacity: '+Math.floor(_expected / 8)+' bytes');
-        console.log('expected capacity with');
-
-        for (i = 1; i < 8; i++) {
-            n = (1 << i) - 1;
-            changed = _large - _large % (n + 1);
-            changed = (changed + _one + _one / 2 - _one / (n + 1)) / (n + 1);
-            
-            usable = (_expected * i / n - _expected * i / n % n) / 8;
-            if(usable === 0) break;
-            console.log( (i==1 ? 'default' : '(1, '+n+', '+i+')') + ' code: ' + Math.floor(usable) + ' bytes (efficiency: '+(usable * 8 / changed).toFixed(2)+' bits per change)');
-        }
-        
-        if(data && data.length !== 0){
-            console.log('permutation starts');
-            var prng = prng_newstate();
-            prng.init(iv);
-            var pm = new Permutaion(prng, coeff_count);
-
-            var next_bit_to_embed = 0,
-                byte_to_embed = data.length,
-                data_idx = 0,
-                available_bits_to_embed = 0;
-
-            console.log('Embedding of '+byte_to_embed+'+4 bytes');
-
-            if(byte_to_embed > 0x007fffff) byte_to_embed = 0x007ffff;
-
-            for (i = 1; i < 8; i++) {
-                n = (1 << i) - 1;
-                usable = (_expected * i / n - _expected * i / n % n) / 8;
-                if(usable < byte_to_embed + 4) break;
-            }                
-
-            k = i - 1;
-            n = (1 << k) - 1;
-
-            if(n === 0){
-                throw 'data will not fit';
-                //n = 1;
-            }
-            
-            if(n == 1){
-                console.log('using default code');
-            }else{
-                console.log('using (1, '+n+', '+k+') code');
-            }
-
-            byte_to_embed |= k << 24;
-            byte_to_embed ^= prng.next();
-            byte_to_embed ^= prng.next() << 8;
-            byte_to_embed ^= prng.next() << 16;
-            byte_to_embed ^= prng.next() << 24;
-
-            next_bit_to_embed = byte_to_embed & 1;
-            byte_to_embed >>= 1;
-            available_bits_to_embed = 31;
-            _embedded += 1;
-
-            for (ii = 0; ii < coeff_count; ii++) {
-                shuffled_index = pm.get_shuffled(ii);
-
-                if(shuffled_index % 64 === 0 || coeff[shuffled_index] === 0) continue;
-
-                var cc = coeff[shuffled_index];
-                _examined++;
-
-                if(cc > 0 && (cc & 1) != next_bit_to_embed){
-                    coeff[shuffled_index]--;
-                    _changed++;
-                }else if(cc < 0 && (cc & 1) == next_bit_to_embed){
-                    coeff[shuffled_index]++;
-                    _changed++;
+            for (var i = 0; i < blocksLength; ++i) {
+                if (i % 64 == 0) {
+                    continue;
                 }
 
-                if(coeff[shuffled_index] !== 0){
-                    if(available_bits_to_embed === 0){
-                        if(n > 1 || data_idx >= data.length) break;
-                        byte_to_embed = data[data_idx++];
-                        byte_to_embed ^= prng.next();
-                        available_bits_to_embed = 8;
-                    }
-                    next_bit_to_embed = byte_to_embed & 1;
-                    byte_to_embed >>= 1;
-                    available_bits_to_embed--;
-                    _embedded++;
-                }else{
-                    _thrown++;
+                if (blocks[i] == 1 || blocks[i] == -1){
+                    ++ones;
+                } else if (blocks[i] == 0) {
+                    ++zeros;
                 }
             }
 
-            if(n > 1){
-                var is_last_byte = false;
-                while(!is_last_byte || (available_bits_to_embed !== 0 && is_last_byte)){
-                    var k_bits_to_embed = 0;
-                    for (i = 0; i < k; i++) {
-                        if(available_bits_to_embed === 0){
-                            if(data_idx >= data.length){
-                                is_last_byte = true;
+            var large = blocksLength - zeros - ones - blocksLength / 64;
+            var expected = Math.floor(large + (0.49 * ones));
+            var k;
+
+            for (k = 1; k < 8; ++k) {
+                var n = (1 << k) - 1;
+                var usable = (expected * k / n - expected * k / n % n) / 8;
+
+                if (usable < dataLength) {
+                    break;
+                }
+            }
+
+            this.stegEmbed(data, IV, k - 1);
+        } else {
+            var PRNG = prng_newstate();
+
+            PRNG.init(IV);
+
+            var permutation = permute(PRNG, blocksLength);
+
+            if (k < 2) {
+                for (var i = 0; i < dataLength; ++i) {
+                    var octet = data[i] ^ PRNG.next();
+
+                    for (var j = 7; j >= 0; --j) {
+                        var bit = octet >> j & 1;
+
+                        while (true) {
+                            var index = permutation.pop();
+
+                            if (index === undefined) {
+                                throw "Data is too large";
+                            }
+
+                            var coefficient = blocks[index];
+
+                            if (index % 64 == 0 || coefficient == 0) {
+                                continue;
+                            }
+
+                            if (coefficient > 0 && (coefficient & 1) != bit) {
+                                ++blocks[index];
+                            } else if (coefficient < 0 && (coefficient & 1) == bit) {
+                                ++blocks[index];
+                            }
+
+                            if (blocks[index] != 0) {
                                 break;
                             }
-                            byte_to_embed = data[data_idx++];
-                            byte_to_embed ^= prng.next();
-                            available_bits_to_embed = 8;
                         }
-                        next_bit_to_embed = byte_to_embed & 1;
-                        byte_to_embed >>= 1;
-                        available_bits_to_embed--;
-                        k_bits_to_embed |= next_bit_to_embed << i;
-                        _embedded++;
+                    }
+                }
+            } else {
+                var n = (1 << k) - 1;
+                var previousIndex = -1;
+
+                var dataBits = dataLength *  8;
+
+                for (var i = 0; i < dataBits; i += k) {
+                    var bits = 0;
+
+                    for (var j = i; j < i + k; ++j) {
+                        var index = Math.floor(j / 8);
+
+                        if (previousIndex < index) {
+                            data[index] ^= PRNG.next();
+                            previousIndex = index;
+                        }
+
+                        bits <<= 1;
+                        bits |= data[index] >> (7 - j % 8) & 1;
                     }
 
-                    var code_word = [];
-                    var ci = null;
+                    var word = [];
 
-                    for (i = 0; i < n; i++) {     
-                        while(true){
-                            if(++ii >= coeff_count){
-                                throw 'capacity exceeded';
-                            }
-                            ci = pm.get_shuffled(ii);
-                            _examined++;
-                            if(ci % 64 !== 0 && coeff[ci] !== 0) break;
-                        }
-                        code_word.push(ci);
-                    }
+                    while (true) {
+                        for (var j = word.length; j < n; ++j) {
+                            while (true) {
+                                var index = permutation.pop();
 
-                    while(true){
-                        var vhash = 0, extracted_bit;
-                        
-                        for (i = 0; i < code_word.length; i++) {
-                            if(coeff[code_word[i]] > 0){
-                                extracted_bit = coeff[code_word[i]] & 1;
-                            }else{
-                                extracted_bit = 1 - (coeff[code_word[i]] & 1);
-                            }
-
-                            if(extracted_bit == 1)
-                                vhash ^= i + 1;
-                        }
-
-                        i = vhash ^ k_bits_to_embed;
-                        if(!i) break;
-
-                        i--;
-                        coeff[code_word[i]] += coeff[code_word[i]] < 0 ? 1 : -1;
-                        _changed++;
-
-                        if(coeff[code_word[i]] === 0){
-                            _thrown++;
-                            code_word.splice(i,1);
-                            
-                            while(true){
-                                if(++ii >= coeff_count){
-                                    throw 'capacity exceeded';
+                                if (index === undefined){
+                                    throw "Please report this exception";
                                 }
-                                ci = pm.get_shuffled(ii);
-                                _examined++;
-                                if(ci % 64 !== 0 && coeff[ci] !== 0) break;
+
+                                if (index % 64 != 0 && blocks[index] != 0) {
+                                    word.push(index);
+
+                                    break;
+                                }
                             }
-                            code_word.push(ci);
-                        }else{
+                        }
+
+                        var hash = 0;
+
+                        for (var j = 0; j < n; ++j) {
+                            var coefficient = blocks[word[j]];
+                            var bit = coefficient & 1;
+
+                            if (coefficient < 0) {
+                                bit = 1 - bit;
+                            }
+
+                            if (bit) {
+                                hash ^= j + 1;
+                            }
+                        }
+
+                        hash ^= bits;
+
+                        if (hash-- == 0) {
+                            break;
+                        }
+
+                        var index = word[hash];
+
+                        blocks[index] += blocks[index] < 0 ? 1 : -1;
+
+                        if (blocks[index] == 0) {
+                            word.splice(hash, 1);
+                        } else {
                             break;
                         }
                     }
                 }
-            }    
-
-            if(_examined > 0)
-                console.log(_examined + ' coefficients examined');
-            if(_changed > 0)
-                console.log(_changed + ' coefficients changed (efficiency: '+(_embedded / _changed).toFixed(2)+' bits per change)');
-            console.log(_thrown + ' coefficients thrown (zeroed)');
-            console.log((_embedded / 8) + '  bytes embedded');
+            }
         }
     };
 
-    constructor.prototype.f5extract = function(iv){
-        var coeff = this.frames[0].components[0].blocks;
-        var coeff_count = coeff.length;
+    constructor.prototype.stegExtract = function (IV, k) {
+        if (k === undefined) {
+            var result = [];
 
-        console.log('permutation starts');
-        var prng = prng_newstate();
-        prng.init(iv);
-        var pm = new Permutaion(prng, coeff_count);
-        console.log(coeff_count + ' indices shuffled');
-
-        var extracted_byte = 0,
-            available_extracted_bits = 0,
-            n_bytes_extracted = 0,
-            extracted_bit = 0;
-
-        console.log('extraction starts');
-
-        var extracted_file_length = 0,
-            pos = -1, i = 0, cc = 0, shuffled_index = 0;
-
-        while(i < 32){
-            pos++;
-            shuffled_index = pm.get_shuffled(pos);
-            if(shuffled_index % 64 === 0) continue;
-
-            cc = coeff[shuffled_index];
-            
-            if(cc === 0){
-                continue;
-            }else if(cc > 0){
-                extracted_bit = cc & 1;
-            }else{
-                extracted_bit = 1 - (cc & 1);
+            for (var k = 1; k < 8; ++k) {
+                result.push(this.stegExtract(IV, k));
             }
 
-            extracted_file_length |= extracted_bit << i;
-            i++;
-        }
+            return result;
+        } else {
+            var blocks = this.frames[0].components[0].blocks;
+            var blocksLength = blocks.length;
+            var dataLength = Math.floor(blocksLength / 8);
+            var data = new Uint8Array(dataLength);
+            var octet = 0, shift = 0, read = 0;
+            var PRNG = prng_newstate();
 
-        extracted_file_length ^= prng.next();
-        extracted_file_length ^= prng.next() << 8;
-        extracted_file_length ^= prng.next() << 16;
-        extracted_file_length ^= prng.next() << 24;
+            PRNG.init(IV);
 
-        var k = (extracted_file_length >> 24) % 32,
-            n = (1 << k) - 1;
-        extracted_file_length &= 0x007fffff;
+            var permutation = permute(PRNG, blocksLength);
 
-        if(extracted_file_length > coeff_count){
-            throw 'embeded data is bigger than container';
-        }
+            if (k < 2) {
+                for (var i = 0; i < blocksLength; ++i) {
+                    var index = permutation.pop();
+                    var coefficient = blocks[index];
 
-        console.log('length of embedded file: ' + extracted_file_length + ' bytes');
-        var data = new Uint8Array(extracted_file_length),
-            data_idx = 0, keep_extracting = true;
-
-        if(n > 1){
-            var vhash = 0, code;
-            console.log('(1, '+n+', '+k+') code used');
-
-            while(keep_extracting){
-                vhash = 0;
-                code = 1;
-                while(code <= n){
-                    pos++;
-                    if(pos >= coeff_count)
-                        throw 'end of coefficients';
-
-                    shuffled_index = pm.get_shuffled(pos);
-                    if(shuffled_index % 64 === 0) continue;
-
-                    cc = coeff[shuffled_index];
-
-                    if(cc === 0){
+                    if (index % 64 == 0 || coefficient == 0) {
                         continue;
-                    }else if(cc > 0){
-                        extracted_bit = cc & 1;
-                    }else{
-                        extracted_bit = 1 - (cc & 1);
                     }
 
-                    if(extracted_bit == 1)
-                        vhash ^= code;
-                    code++;
+                    var bit = coefficient & 1;
+
+                    if (coefficient < 0){
+                        bit = 1 - bit;
+                    }
+
+                    octet <<= 1;
+                    octet |= bit;
+
+                    if (++shift == 8) {
+                        data[read++] = octet ^ PRNG.next();
+                        octet = shift = 0;
+                    }
                 }
+            } else {
+                var n = (1 << k) - 1;
 
-                for (i = 0; i < k; i++) {
-                    extracted_byte |= (vhash >> i & 1) << available_extracted_bits;
-                    available_extracted_bits++;
-                    if(available_extracted_bits == 8){
-                        data[data_idx++] = extracted_byte ^ prng.next();
-                        extracted_byte = 0;
-                        available_extracted_bits = 0;
-                        n_bytes_extracted++;
+                while (true) {
+                    var bits = 0, j = 0;
+                    var stop = false;
 
-                        if(data_idx >= extracted_file_length){
-                            keep_extracting = false;
+                    while (j < n) {
+                        var index = permutation.pop();
+
+                        if (index == undefined) {
+                            stop = true;
+
                             break;
                         }
+
+                        var coefficient = blocks[index];
+
+                        if (index % 64 == 0 || coefficient == 0) {
+                            continue;
+                        }
+
+                        var bit = coefficient & 1;
+
+                        if (coefficient < 0) {
+                            bit = 1 - bit;
+                        }
+
+                        if (bit == 1) {
+                            bits ^= j + 1;
+                        }
+
+                        ++j;
                     }
-                }
-            }
 
-        }else{
-            console.log('default code used');
-
-            while(pos < coeff_count){
-                pos++;
-                shuffled_index = pm.get_shuffled(pos);
-                if(shuffled_index % 64 === 0) continue;
-
-                cc = coeff[shuffled_index];
-
-                if(cc === 0){
-                    continue;
-                }else if(cc > 0){
-                    extracted_bit = cc & 1;
-                }else{
-                    extracted_bit = 1 - (cc & 1);
-                }
-
-                extracted_byte |= extracted_bit << available_extracted_bits;
-                available_extracted_bits++;
-
-                if(available_extracted_bits == 8){
-                    data[data_idx++] = extracted_byte ^ prng.next();
-                    extracted_byte = 0;
-                    available_extracted_bits = 0;
-                    n_bytes_extracted++;
-
-                    if(data_idx >= extracted_file_length){
+                    if (stop) {
                         break;
                     }
+
+                    for (var i = k - 1; i >= 0; --i) {
+                        octet <<= 1;
+                        octet |= bits >> i & 1;
+
+                        if (++shift == 8) {
+                            data[read++] = octet ^ PRNG.next();
+                            octet = shift = 0;
+                        }
+                    }
                 }
             }
-        }
 
-        return data;
+            return data;
+        }
     };
+
+    // End of stego code
 
 	return constructor;
 

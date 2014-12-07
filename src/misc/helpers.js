@@ -224,3 +224,23 @@ var getURLasAB = function(rawURL, cb) {
         oReq.send(null);        
     }
 };
+
+function permute(PRNG, length){
+    var indexes = Array(length);
+
+    for (var i = 0; i < length; ++i) {
+        indexes[i] = i;
+    }
+
+    var end = length;
+
+    for (var i = 0; i < length; ++i) {
+        var i = (PRNG.next() << 23 ^ PRNG.next() << 16 | PRNG.next() << 8 | PRNG.next()) % end--;
+
+        var temp = indexes[i];
+        indexes[i] = indexes[end];
+        indexes[end] = temp;
+    }
+
+    return indexes;
+}

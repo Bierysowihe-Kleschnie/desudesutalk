@@ -1,3 +1,5 @@
+var steg_iv = [];
+
 var jpegClean = function(origAB) {
     "use strict";
     var i, l, posO = 2, posT = 2,
@@ -157,7 +159,7 @@ var _jpegExtract = function(inArBuf) {
 };
 
 
-var stegger = new jsf5steg();
+var stegger = new steg();
 
 var _initIv = function(){
     "use strict";
@@ -189,7 +191,7 @@ var jpegEmbed = function(img_container, data_array){
     }
 
     try{
-        stegger.f5embed(data_array, steg_iv);
+        stegger.stegEmbed(new Uint8Array(data_array), steg_iv, 1);
     } catch(e){
         alert('Capacity exceeded. Select bigger/more complex image.');
         return false;
@@ -211,7 +213,7 @@ var jpegExtract = function(inArBuf) {
 
     var data;
     try{
-        data = stegger.f5extract(steg_iv);
+        data = stegger.stegExtract(steg_iv);
     } catch(e){
         return false;
     }
