@@ -2,7 +2,7 @@ all: ddt.user.js ddt.meta.js
 
 %.js: ; cat $^ > $@
 
-ddt.user.js: src/metablock.js src/_head.js dist/crypto.js dist/libs.js src/misc/storage.js src/misc/helpers.js src/misc/utf8array.js  src/misc/steg.js src/misc/jpeg.js src/misc/boards.js src/misc/codec.js src/misc/contacts.js src/misc/crypt.js src/misc/jpeg.js src/misc/ui.js src/misc/wakabamark.js src/main.js src/_tail.js 
+ddt.user.js: src/metablock.js src/_head.js dist/crypto.js dist/libs.js src/misc/storage.js src/misc/helpers.js src/misc/utf8array.js src/misc/steg.js src/misc/jpeg.js src/misc/boards.js src/misc/codec.js src/misc/contacts.js src/misc/crypt.js src/misc/jpeg.js src/misc/ui.js src/misc/wakabamark.js src/main.js src/_tail.js 
 
 ddt.meta.js: src/metablock.js
 

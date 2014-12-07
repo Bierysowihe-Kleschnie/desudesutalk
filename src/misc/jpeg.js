@@ -191,7 +191,7 @@ var jpegEmbed = function(img_container, data_array){
     }
 
     try{
-        stegger.stegEmbed(new Uint8Array(data_array), steg_iv, 1);
+        stegger.stegEmbed(new Uint8Array(data_array), steg_iv);
     } catch(e){
         alert('Capacity exceeded. Select bigger/more complex image.');
         return false;
